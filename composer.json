@@ -17,5 +17,8 @@
         "psr-4": {
             "com\\github\\adangel\\chunkphp\\": "tests/"
         }
+    },
+    "scripts": {
+        "test": "vendor/bin/phpunit tests"
     }
 }
