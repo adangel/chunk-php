@@ -1,5 +1,10 @@
 # chunk-php
 
+[![Build Status](https://travis-ci.com/adangel/chunk-php.svg?branch=master)](https://travis-ci.com/adangel/chunk-php)
+![GitHub](https://img.shields.io/github/license/adangel/chunk-php)
+![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/adangel/chunk-php)
+
+
 Simple hosting of temporary files. The idea is basically [chunk.io](https://chunk.io/) but implemented
 in php so that can run on any website hoster.
 
