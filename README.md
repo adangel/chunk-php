@@ -1,6 +1,7 @@
 # chunk-php
 
 [![Build Status](https://travis-ci.com/adangel/chunk-php.svg?branch=master)](https://travis-ci.com/adangel/chunk-php)
+![GitHub Workflow Status](https://img.shields.io/github/workflow/status/adangel/chunk-php/PHP%20Composer)
 ![GitHub](https://img.shields.io/github/license/adangel/chunk-php)
 ![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/adangel/chunk-php)
 
