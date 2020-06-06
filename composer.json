@@ -1,12 +1,12 @@
 {
     "name": "adangel/chunkphp",
     "require": {
-        "php": ">=7.0",
+        "php": "^7.2",
         "ext-zip": "*",
         "ext-phar": "*"
     },
     "require-dev": {
-        "phpunit/phpunit": "^9.2"
+        "phpunit/phpunit": "^8.5"
     },
     "autoload": {
         "psr-4": {
