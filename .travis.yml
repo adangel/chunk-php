@@ -1,0 +1,6 @@
+language: php
+install: composer install
+script: vendor/bin/phpunit tests
+cache:
+  directories:
+    - vendor

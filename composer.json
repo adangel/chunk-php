@@ -1,0 +1,21 @@
+{
+    "name": "adangel/chunkphp",
+    "require": {
+        "php": ">=7.0",
+        "ext-zip": "*",
+        "ext-phar": "*"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^9.2"
+    },
+    "autoload": {
+        "psr-4": {
+            "com\\github\\adangel\\chunkphp\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "com\\github\\adangel\\chunkphp\\": "tests/"
+        }
+    }
+}
