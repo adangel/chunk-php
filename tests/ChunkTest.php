@@ -6,10 +6,6 @@ use PHPUnit\Framework\TestCase;
 
 class ChunkTest extends TestCase {
 
-    public function testA() {
-        $this->assertEquals('a', 'a');
-    }
-
     public function testGetTargetUrl() {
         $_SERVER['HTTP_HOST'] = 'chunk.example.com';
         $_SERVER['REQUEST_URI'] = '/';
