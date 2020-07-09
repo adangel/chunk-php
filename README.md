@@ -7,7 +7,7 @@
 
 
 Simple hosting of temporary files. The idea is basically [chunk.io](https://chunk.io/) but implemented
-in php so that can run on any website hoster.
+in php so that it can be run on any website hoster.
 
 ## Features
 
