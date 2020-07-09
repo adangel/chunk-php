@@ -47,6 +47,23 @@ class StorageTest extends TestCase {
         $this->assertFalse($file->hasContent());
         $this->assertFileNotExists($file->getRealPath());
         $this->assertStringStartsWith($this->basepath . '/joe/', $file->getRealPath());
+        $this->assertStringEndsWith($file->getUuid(), $file->getRealPath());
+    }
+
+    public function testCreateNewFileWithExtension() {
+        $file = $this->storage->createFile('joe', 'original-file-name.zip');
+        $this->assertFalse($file->hasContent());
+        $this->assertFileNotExists($file->getRealPath());
+        $this->assertStringStartsWith($this->basepath . '/joe/', $file->getRealPath());
+        $this->assertStringEndsWith('.zip', $file->getRealPath());
+    }
+
+    public function testCreateNewFileWithExtension2() {
+        $file = $this->storage->createFile('joe', '/joe/original-file-name.zip');
+        $this->assertFalse($file->hasContent());
+        $this->assertFileNotExists($file->getRealPath());
+        $this->assertStringStartsWith($this->basepath . '/joe/', $file->getRealPath());
+        $this->assertStringEndsWith('.zip', $file->getRealPath());
     }
 
     public function testCreateAndStoreNewFile() {

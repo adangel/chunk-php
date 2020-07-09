@@ -22,13 +22,22 @@ class Storage {
         return null;
     }
 
-    function createFile($user) : File {
+    function createFile($user, $originalFileName = NULL) : File {
         $uuid = Storage::guidv4();
-        return new File($this->createRealPath($user, $uuid), $this->baseurl, $user, $uuid);
+        $extension = '';
+
+        if (isset($originalFileName)) {
+            $path_parts = pathinfo($originalFileName);
+            if (isset($path_parts['extension'])) {
+                $extension = '.' . $path_parts['extension'];
+            }
+        }
+
+        return new File($this->createRealPath($user, $uuid, $extension), $this->baseurl, $user, $uuid);
     }
 
-    private function createRealPath($user, $uuid) : string {
-        return $this->datadir . '/' . $user . '/' . $uuid;
+    private function createRealPath($user, $uuid, $extension = '') : string {
+        return $this->datadir . '/' . $user . '/' . $uuid . $extension;
     }
 
     # https://stackoverflow.com/a/15875555/1169968

@@ -28,6 +28,10 @@ class File {
     function getName() : string {
     }
 
+    function getUuid() : string {
+        return $this->uuid;
+    }
+
     function getType() : string {
         $finfo = new finfo(FILEINFO_MIME);
         $mimetype = $finfo->file($this->realPath);
