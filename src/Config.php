@@ -29,7 +29,7 @@ class Config {
     }
 
     public static function isValidUserAuthentication($user, $pw) {
-        if (Config::isValidUser($user) && Config::$USERS[$user] === $pw) {
+        if (array_key_exists($user, Config::$USERS) && Config::$USERS[$user] === $pw) {
             return TRUE;
         }
         return FALSE;
