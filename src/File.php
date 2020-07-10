@@ -34,6 +34,10 @@ class File {
     function getName() : string {
     }
 
+    function getUser() : string {
+        return $this->user;
+    }
+
     function getUuid() : string {
         return $this->uuid;
     }

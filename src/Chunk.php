@@ -2,6 +2,7 @@
 
 namespace com\github\adangel\chunkphp;
 
+use Exception;
 use ZipArchive;
 use PharData;
 use finfo;
@@ -11,8 +12,8 @@ const VERSION = '1.0.0';
 class Chunk {
     private $method;
     private $user;
-    private $current_uuid;
     private $verbose;
+    private $storage;
 
     function __construct($method) {
         $this->init();
@@ -32,14 +33,11 @@ EOT;
             file_put_contents($data_htacess_file, $htaccess);
         }
 
+        $this->storage = new Storage($this->determineBaseUrlFromRequest(), Config::getDataDir());
+
         if ($this->verbose) {
             header('Content-Type: text/html');
         }
-    }
-
-    public function init_for_tests($user, $current_uuid) {
-        $this->user = $user;
-        $this->current_uuid = $current_uuid;
     }
 
     private function print($message) {
@@ -69,15 +67,21 @@ EOT;
             Chunk::end(401); # Unauthorized
         }
 
-        if (Config::isValidUserAuthentication($user, $pw)) {
+        $valid = FALSE;
+        try {
+            $valid = Config::isValidUserAuthentication($user, $pw);
+        } catch (Exception $e) {
+            $this->print("Invalid user: {$e->getMessage()}");
+        }
+
+        if ($valid === TRUE) {
+            $this->user = $user;
             $this->print("authorization passed for $user");
         } else {
             $this->print("authorization failed");
             sleep(10);
             Chunk::end(403); # Forbidden
         }
-
-        $this->user = $user;
     }
 
     private function determinePathFromRequest() {
@@ -126,8 +130,8 @@ EOT;
             print <<<HERE
 <h2>Upload files from your terminal</h2>
 <pre>
-$ curl -u user:pass -T path/to/file $baseurl
-{$baseurl}user/00d971ff-f70a-4e3e-a706-58c606cab27c
+$ curl -u user:pass -T path/to/file $baseurl/
+{$baseurl}/user/00d971ff-f70a-4e3e-a706-58c606cab27c
 </pre>
 
 <h2>Upload files with your browser</h2>
@@ -168,129 +172,51 @@ HERE;
                 Chunk::end(400); # Bad Request
             }
 
-            $this->user = $parts[0];
-            $this->current_uuid = $parts[1];
-
-            $this->check_user($parts[0]);
-            $this->check_uuid_name($parts[1]);
-
-            $this->print("user: $this->user");
-            $this->print("uuid: $this->current_uuid");
-
-            $filepath = Config::getDataDir() . '/' . $this->user . '/' . $this->current_uuid;
-            $this->print("Determined local base file: $filepath");
-
-            # the file might have an extension...
-            $filepaths = glob($filepath . "*");
-            if ($filepaths !== FALSE && count($filepaths) > 0) {
-                $filepath = $filepaths[0];
-            } else {
-                $this->print("file $filepath not found");
-                Chunk::end(404); # Not Found
+            try {
+                $file = $this->storage->findFile($parts[0], $parts[1]);
+            } catch (Exception $e) {
+                $this->print("Invalid user or uuid: {$e->getMessage()}");
+                Chunk::end(400); # Bad Request
             }
-            $this->print("Resolved local file: $filepath");
 
-            $finfo = new finfo(FILEINFO_MIME);
-            $mimetype = $finfo->file($filepath);
-            $this->print("mimetype: $mimetype");
+            if ($file !== NULL && $file->hasContent()) {
+                $this->print("user: {$file->getUser()}");
+                $this->print("uuid: {$file->getUuid()}");
 
-            $this->print("Parsed URI parts: " . count($parts));
-            if (count($parts) > 2 && Chunk::str_startsWith($mimetype, "application/zip")) {
-                $this->print('ZIP file detected, looking into it for name=' . $parts[2]);
-                $zip = new ZipArchive;
-                $res = $zip->open($filepath);
-                if ($res === FALSE) {
-                    $this->print("Couldn't open ZIP file");
-                    Chunk::end(500); # Internal Server Error
-                }
-                $fp = $zip->getStream($parts[2]);
-                if ($fp === FALSE) {
-                    // try again with with index.html
-                    header('Location: ' . $_SERVER['REQUEST_URI'] . '/index.html');
-                    Chunk::end(302); # Found
-                }
+                if (count($parts) === 2) {
+                    $this->sendContentType($file->getType());
 
-                if ($fp === FALSE) {
-                    $this->print("Name=" . $parts[2] . " inside ZIP file not found");
-                    Chunk::end(404); # Not Found
-                }
-
-                $contents = fread($fp, 8192);
-                $mimetype = $finfo->buffer($contents);
-                if (Chunk::str_endsWith($parts[2], '.css')) {
-                    $mimetype = 'text/css';
-                } else if (Chunk::str_endsWith($parts[2], '.js')) {
-                    $mimetype = 'application/javascript';
-                }
-                $this->print("Determined mimetype: $mimetype");
-
-                $this->sendContentType($mimetype);
-
-                if ($this->verbose) {
-                    print('<hr><pre>');
-                }
-                if ($sendContent) {
-                    print($contents);
-                    while (!feof($fp)) {
-                        $contents = fread($fp, 8192);
-                        print($contents);
+                    if ($this->verbose) {
+                        print('<hr><pre>');
                     }
-                }
-                if ($this->verbose) {
-                    print('</pre>');
-                }
-                fclose($fp);
-                $zip->close();
-            } else if (count($parts) > 2 && Chunk::str_startsWith($mimetype, "application/x-tar")) {
-                $this->print('TAR archive deteted, looking into it for name=' . $parts[2]);
-                $phar = new PharData($filepath);
-                $file = $phar[$parts[2]];
-                if (!$file) {
-                    $this->print('Couldn\'t open TAR file entry ' . $parts[2]);
-                    Chunk::end(404); # Not Found
-                }
+                    if ($sendContent) {
+                        $file->send();
+                    }
+                    if ($this->verbose) {
+                        print('</pre>');
+                    }
+                } else if (count($parts) > 2) {
+                    if ($file->hasContent($parts[2])) {
+                        $this->sendContentType($file->getType($parts[2]));
 
-                $contents = $file->getContent();
-                $mimetype = $finfo->buffer($contents);
-                if (Chunk::str_endsWith($parts[2], '.css')) {
-                    $mimetype = 'text/css';
-                } else if (Chunk::str_endsWith($parts[2], '.js')) {
-                    $mimetype = 'application/javascript';
-                }
-                $this->print("Determined mimetype: $mimetype");
-
-                $this->sendContentType($mimetype);
-
-                if ($this->verbose) {
-                    print('<hr><pre>');
-                }
-                if ($sendContent) {
-                    print($contents);
-                }
-                if ($this->verbose) {
-                    print('</pre>');
+                        if ($this->verbose) {
+                            print('<hr><pre>');
+                        }
+                        if ($sendContent) {
+                            $file->sendArchivePath($parts[2]);
+                        }
+                        if ($this->verbose) {
+                            print('</pre>');
+                        }
+                    } else {
+                        // try again with with index.html
+                        header('Location: ' . $_SERVER['REQUEST_URI'] . '/index.html');
+                        Chunk::end(302); # Found
+                    }
                 }
             } else {
-                $this->sendContentType($mimetype);
-
-                if ($this->verbose) {
-                    print('<hr><pre>');
-                }
-                if ($sendContent) {
-                    $handle = fopen($filepath, 'r');
-                    if (FALSE === $handle) {
-                        $this->print("Couldn't open file $filepath");
-                        Chunk::end(500); # Internal Server Error
-                    }
-                    while (!feof($handle)) {
-                        $contents = fread($handle, 8192);
-                        print($contents);
-                    }
-                    fclose($handle);
-                }
-                if ($this->verbose) {
-                    print('</pre>');
-                }
+                $this->print("file not found: $uri");
+                Chunk::end(404); # Not Found
             }
         } else {
             Chunk::end(400); # Bad Request
@@ -328,22 +254,26 @@ HERE;
         $this->checkAuthorization();
         $this->prepareDestinationUploadDirectory();
         $this->cleanupOldFiles();
-        $this->current_uuid = Chunk::guidv4();
-        $this->print("Posting new file for user $this->user with uuid: $this->current_uuid");
+        $this->print("Posting new file for user $this->user");
 
         if (array_key_exists('file', $_FILES) && $_FILES['file']['name'] !== '') {
             $original_filename = basename($_FILES['file']['name']);
-            $destination = $this->determineDestinationFilename($original_filename);
+
+            $file = $this->storage->createFile($this->user, $original_filename);
+            $destination = $file->getRealPath();
             if (move_uploaded_file($_FILES['file']['tmp_name'], $destination)) {
 
                 if (filesize($destination) > Config::getMaxFileSize()) {
                     $this->print("File is too big, max allowed: " . Config::getMaxFileSize());
+                    if (!unlink($destination)) {
+                        $this->print("Error while deleting file $destination");
+                    }
                     Chunk::end(400); # Bad Request
                 }
 
                 $this->sendContentType('text/html');
                 print("<p>Your file has been successfully uploaded.</p>" . PHP_EOL);
-                $url = $this->getTargetUrl();
+                $url = $file->getUrl();
                 print("<p>It is available as <a href=\"$url\">$url</a></p>");
             } else {
                 $this->print("Move uploaded file failed, maybe file upload size limit? see php.ini");
@@ -359,44 +289,27 @@ HERE;
         $this->checkAuthorization();
         $this->prepareDestinationUploadDirectory();
         $this->cleanupOldFiles();
-        $this->current_uuid = Chunk::guidv4();
         $uri = $this->determinePathFromRequest();
 
-        $this->print("Putting new file for user $this->user with uuid: $this->current_uuid");
+        $this->print("Putting new file for user $this->user");
         $this->print("uri: $uri");
 
         $original_filename = basename($uri);
-        $destination = $this->determineDestinationFilename($original_filename);
-
-        $putdata = fopen("php://input", "r");
-        $fp = fopen($destination, "w");
-        while ($data = fread($putdata, 8192)) {
-            fwrite($fp, $data);
-        }
-        fclose($fp);
-        fclose($putdata);
+        $file = $this->storage->createFile($this->user, $original_filename);
+        $destination = $file->getRealPath();
+        $file->store();
 
         if (filesize($destination) > Config::getMaxFileSize()) {
             $this->print("File is too big, max allowed: " . Config::getMaxFileSize());
+            if (!unlink($destination)) {
+                $this->print("Error while deleting file $destination");
+            }
             Chunk::end(400); # Bad Request
         }
 
         $this->sendContentType('text/uri-list');
-        print($this->getTargetUrl());
+        print($file->getUrl());
         print(PHP_EOL);
-    }
-
-    private function determineDestinationFilename($original_filename) {
-        $this->print("Original Filename: $original_filename");
-        $path_parts = pathinfo($original_filename);
-        $ext = '';
-        if (array_key_exists('extension', $path_parts)) {
-            $ext = '.' . $path_parts['extension'];
-        }
-        $this->print("Extension: $ext");
-        $destination = Config::getDataDir() . '/' . $this->user . '/' . $this->current_uuid . $ext;
-        $this->print("Destination: " . $destination);
-        return $destination;
     }
 
     private function prepareDestinationUploadDirectory() {
@@ -413,7 +326,7 @@ HERE;
         }
     }
 
-    private function determineBaseUrlFromRequest() {
+    public function determineBaseUrlFromRequest() {
         $result = 'http://';
         if (array_key_exists('HTTPS', $_SERVER)) {
             $result = 'https://';
@@ -431,38 +344,10 @@ HERE;
         if (Chunk::str_endsWith($result, "?$query")) {
             $result = substr($result, 0, -strlen("?$query"));
         }
-        if (!Chunk::str_endsWith($result, '/')) {
-            $result .= '/';
-        }
+        $result = trim($result, '/');
         $this->print("Determined base URL: $result");
         return $result;
     }
-
-    public function getTargetUrl() {
-        $result = $this->determineBaseUrlFromRequest();
-        $result .= $this->user . '/' . $this->current_uuid;
-        if ($this->verbose) {
-            $result .= '?chunk_php_verbose';
-        }
-        $this->print("Determined target URL: $result");
-        return $result;
-    }
-
-    function check_user() {
-        if (!Config::isValidUser($this->user)) {
-            $this->print("Invalid user: $this->user");
-            Chunk::end(404); # Not Found
-        }
-    }
-
-    function check_uuid_name() {
-        if (preg_match("/^[a-f0-9-]{36}(\.[a-zA-Z0-9]{1,5})?$/", $this->current_uuid) !== 1) {
-            $this->print("Invalid UUID Name: $this->current_uuid");
-            Chunk::end(400); # Bad Request
-        }
-    }
-
-
     # https://stackoverflow.com/a/15875555/1169968
     public static function guidv4()
     {
