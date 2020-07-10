@@ -31,25 +31,25 @@ class StorageTest extends TestCase {
         $file = $this->storage->findFile('joe', '127ceecd-f10b-4d34-88ed-6f0de2133021');
         $this->assertEquals(9331, $file->getSize());
         $this->assertEquals('application/zip; charset=binary', $file->getType());
-        $this->assertFile($file, 'test.txt', 'text/plain; charset=us-ascii', 51,
+        $this->assertFile($file, 'test.txt', 'text/plain', 51,
             'test file for 127ceecd-f10b-4d34-88ed-6f0de2133021'. PHP_EOL);
 
         // '/' -> not found
         $this->assertFalse($file->hasContent('/'));
 
         // '/test.txt' -> works like 'test.txt'
-        $this->assertFile($file, '/test.txt', 'text/plain; charset=us-ascii', 51,
+        $this->assertFile($file, '/test.txt', 'text/plain', 51,
             'test file for 127ceecd-f10b-4d34-88ed-6f0de2133021'. PHP_EOL);
         $this->assertFile($file, '/style.css', 'text/css', 49,
             '// 127ceecd-f10b-4d34-88ed-6f0de2133021' . PHP_EOL . 'body { }' . PHP_EOL);
         $this->assertFile($file, '/script.js', 'application/javascript', 73,
             '(function() { console.log("127ceecd-f10b-4d34-88ed-6f0de2133021"); })();' . PHP_EOL);
-        $this->assertFile($file, '/index.html', 'text/html; charset=us-ascii', 72,
+        $this->assertFile($file, '/index.html', 'text/html', 72,
             '<html><body><h1>127ceecd-f10b-4d34-88ed-6f0de2133021</h1></body></html>' . PHP_EOL);
-        $this->assertFile($file, '/sub/folder/foo.html', 'text/html; charset=us-ascii', 67,
+        $this->assertFile($file, '/sub/folder/foo.html', 'text/html', 67,
             '<html><body>foo 127ceecd-f10b-4d34-88ed-6f0de2133021</body></html>' . PHP_EOL);
-        $this->assertFile($file, '/image.png', 'image/png; charset=binary', 3220);
-        $this->assertFile($file, '/image.jpg', 'image/jpeg; charset=binary', 6096);
+        $this->assertFile($file, '/image.png', 'image/png', 3220);
+        $this->assertFile($file, '/image.jpg', 'image/jpeg', 6096);
     }
 
     private function assertFile($file, $path, $type, $size, $content = NULL) {
@@ -67,16 +67,16 @@ class StorageTest extends TestCase {
 
     public function testFindFileTarArchiveContent() {
         $file = $this->storage->findFile('joe', '17621e7d-6e8d-449f-aa48-e81728994afc');
-        $this->assertEquals(217, $file->getSize());
-        $this->assertEquals('application/x-tar', $file->getType());
-        $this->assertFile($file, 'test.txt', 'text/plain; charset=us-ascii', 51,
+        $this->assertEquals(8169, $file->getSize());
+        $this->assertEquals('application/x-gtar-compressed', $file->getType());
+        $this->assertFile($file, 'test.txt', 'text/plain', 51,
             'test file for 17621e7d-6e8d-449f-aa48-e81728994afc'. PHP_EOL);
 
         // '/' -> not found
         $this->assertFalse($file->hasContent('/'));
 
         // '/test.txt' -> works like 'test.txt'
-        $this->assertFile($file, '/test.txt', 'text/plain; charset=us-ascii', 51,
+        $this->assertFile($file, '/test.txt', 'text/plain', 51,
             'test file for 17621e7d-6e8d-449f-aa48-e81728994afc'. PHP_EOL);
         $this->assertFile($file, '/style.css', 'text/css', 49,
             '// 17621e7d-6e8d-449f-aa48-e81728994afc' . PHP_EOL . 'body { }' . PHP_EOL);
@@ -86,6 +86,8 @@ class StorageTest extends TestCase {
             '<html><body><h1>17621e7d-6e8d-449f-aa48-e81728994afc</h1></body></html>' . PHP_EOL);
         $this->assertFile($file, '/sub/folder/foo.html', 'text/html', 67,
             '<html><body>foo 17621e7d-6e8d-449f-aa48-e81728994afc</body></html>' . PHP_EOL);
+        $this->assertFile($file, '/image.png', 'image/png', 3220);
+        $this->assertFile($file, '/image.jpg', 'image/jpeg', 6096);
     }
 
     public function testFindFileExistingWithExtension() {

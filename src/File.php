@@ -1,7 +1,8 @@
 <?php
 namespace com\github\adangel\chunkphp;
 
-use finfo;
+use Exception;
+use PharData;
 use ZipArchive;
 
 class File {
@@ -38,16 +39,11 @@ class File {
     }
 
     function getType($pathInArchive = NULL) : string {
-        $finfo = new finfo(FILEINFO_MIME);
         if (!isset($pathInArchive)) {
-            return $finfo->file($this->realPath);
+            return MimeTypes::determineReal($this->realPath);
         }
 
-        if ($this->isZip()) {
-            return $this->getZipEntryType($finfo, $pathInArchive);
-        }
-
-        return 'unknown type';
+        return MimeTypes::determineVirtual($pathInArchive);
     }
 
     function getSize($pathInArchive = NULL) : int {
@@ -57,9 +53,11 @@ class File {
 
         if ($this->isZip()) {
             $entry = $this->getZipEntry($pathInArchive);
-            if ($entry !== FALSE) {
-                return $entry['size'];
-            }
+        } else if ($this->isTar()) {
+            $entry = $this->getTarEntry($pathInArchive);
+        }
+        if ($entry !== FALSE) {
+            return $entry['size'];
         }
 
         return FALSE;
@@ -78,14 +76,14 @@ class File {
             return TRUE;
         }
 
+        $entry = FALSE;
         if ($this->isZip()) {
             $entry = $this->getZipEntry($pathInArchive);
-            if ($entry === FALSE) {
-                return FALSE;
-            }
-            return TRUE;
         } else if ($this->isTar()) {
-            throw new Exception("Couldn't open tar file {$this->realPath}");
+            $entry = $this->getTarEntry($pathInArchive);
+        }
+        if ($entry !== FALSE) {
+            return TRUE;
         }
         return FALSE;
     }
@@ -115,36 +113,6 @@ class File {
         return trim($path, '/');
     }
 
-    private function getZipEntryType($finfo, $pathInArchive) : string {
-        $path = File::sanitizeArchivePath($pathInArchive);
-        if ($path === '') {
-            throw new Exception("Invalid entry $pathInArchive");
-        }
-
-        $zip = new ZipArchive;
-        $res = $zip->open($this->realPath, ZipArchive::RDONLY);
-        if ($res === FALSE) {
-            throw new Exception("Couldn't open zip file {$this->realPath}: $res");
-        }
-        $fp = $zip->getStream($path);
-        if ($fp === FALSE) {
-            throw new Exception("Entry $path in file {$this->realPath} not found");
-        }
-        $contents = fread($fp, 8192);
-        $mimetype = $finfo->buffer($contents);
-        fclose($fp);
-        $zip->close();
-
-        $extension = pathinfo($path, PATHINFO_EXTENSION);
-        if ($extension === 'css') {
-            $mimetype = 'text/css';
-        } else if ($extension === 'js') {
-            $mimetype = 'application/javascript';
-        }
-
-        return $mimetype;
-    }
-
     private function sendZipEntry($stream, $pathInArchive) : void {
         $path = File::sanitizeArchivePath($pathInArchive);
         if ($path === '') {
@@ -169,7 +137,40 @@ class File {
     }
 
     private function isTar() : bool {
-        return strpos($this->getType(), 'application/x-tar') === 0;
+        return strpos($this->getType(), 'application/x-tar') === 0
+            || strpos($this->getType(), 'application/x-gtar') === 0;
+    }
+
+    /** @return array|false */
+    private function getTarEntry($pathInArchive) {
+        $path = File::sanitizeArchivePath($pathInArchive);
+        if ($path === '') {
+            return FALSE;
+        }
+
+        $phar = new PharData($this->realPath);
+        $file = $phar[$path];
+        if ($file) {
+            return array('size' => $file->getSize(), 'name' => $path);
+        }
+        return FALSE;
+    }
+
+    private function sendTarEntry($stream, $pathInArchive) : void {
+        $path = File::sanitizeArchivePath($pathInArchive);
+        if ($path === '') {
+            throw new Exception("Invalid entry $pathInArchive");
+        }
+
+        $phar = new PharData($this->realPath);
+        $file = $phar[$path];
+        if ($file) {
+            $fileObject = $file->openFile();
+            while (!$fileObject->eof()) {
+                $contents = $fileObject->fread(8192);
+                fwrite($stream, $contents);
+            }
+        }
     }
 
     /**
@@ -194,6 +195,9 @@ class File {
         }
         if ($this->isZip()) {
             $this->sendZipEntry($stream, $pathInArchive);
+            return;
+        } else if ($this->isTar()) {
+            $this->sendTarEntry($stream, $pathInArchive);
             return;
         }
         throw new Exception("File {$this->realPath} is not an archive");
