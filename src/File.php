@@ -104,7 +104,7 @@ class File {
         }
 
         $zip = new ZipArchive;
-        $res = $zip->open($this->realPath, ZipArchive::RDONLY);
+        $res = $zip->open($this->realPath);
         if ($res === FALSE) {
             throw new Exception("Couldn't open zip file {$this->realPath}: $res");
         }
@@ -145,7 +145,7 @@ class File {
         }
 
         $zip = new ZipArchive;
-        $res = $zip->open($this->realPath, ZipArchive::RDONLY);
+        $res = $zip->open($this->realPath);
         if ($res === FALSE) {
             throw new Exception("Couldn't open zip file {$this->realPath}: $res");
         }
