@@ -54,6 +54,10 @@ class FileTest extends TestCase {
 
         // '/' -> not found
         $this->assertFalse($file->hasContent('/'));
+        // non existing file -> not found
+        $this->assertFalse($file->hasContent('/nonexisting.file'));
+        // directory -> not found
+        $this->assertFalse($file->hasContent('/sub/folder'));
 
         // '/test.txt' -> works like 'test.txt'
         $this->assertFile($file, '/test.txt', 'text/plain', 51, "test file for $uuid" . PHP_EOL);

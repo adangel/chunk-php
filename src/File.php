@@ -174,9 +174,11 @@ class File {
         }
 
         $phar = new PharData($this->realPath);
-        $file = $phar[$path];
-        if ($file) {
-            return array('size' => $file->getSize(), 'name' => $path);
+        if ($phar->offsetExists($path)) {
+            $file = $phar[$path];
+            if ($file && $file->isFile()) {
+                return array('size' => $file->getSize(), 'name' => $path);
+            }
         }
         return FALSE;
     }
