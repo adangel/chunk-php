@@ -10,7 +10,9 @@ class Storage {
         $this->datadir = $dir;
     }
 
-    function findFile($user, $uuid) : ?File {
+    function findFile($username, $id) : ?File {
+        $user = new User($username);
+        $uuid = new Uuid($id);
         $realPath = $this->createRealPath($user, $uuid);
 
         # the file might have an extension...
@@ -19,17 +21,18 @@ class Storage {
             $realPath = $realPaths[0];
             return new File($realPath, $this->baseurl, $user, $uuid);
         }
-        return null;
+        return NULL;
     }
 
-    function createFile($user, $originalFileName = NULL) : File {
-        $uuid = Storage::guidv4();
+    function createFile($username, $originalFileName = NULL) : File {
+        $user = new User($username);
+        $uuid = new Uuid();
         $extension = '';
 
         if (isset($originalFileName)) {
-            $path_parts = pathinfo($originalFileName);
-            if (isset($path_parts['extension'])) {
-                $extension = '.' . $path_parts['extension'];
+            $path_extension = pathinfo($originalFileName, PATHINFO_EXTENSION);
+            if (isset($path_extension)) {
+                $extension = '.' . $path_extension;
             }
         }
 
@@ -39,14 +42,4 @@ class Storage {
     private function createRealPath($user, $uuid, $extension = '') : string {
         return $this->datadir . '/' . $user . '/' . $uuid . $extension;
     }
-
-    # https://stackoverflow.com/a/15875555/1169968
-    private static function guidv4()
-    {
-        $data = random_bytes(16);
-        $data[6] = chr(ord($data[6]) & 0x0f | 0x40); // set version to 0100
-        $data[8] = chr(ord($data[8]) & 0x3f | 0x80); // set bits 6-7 to 10
-        return vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($data), 4));
-    }
-
 }

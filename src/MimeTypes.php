@@ -37,10 +37,9 @@ class MimeTypes {
             return MimeTypes::$mimetypes['tar.gz'];
         }
 
-        $path_parts = pathinfo($path);
-        if (array_key_exists('extension', $path_parts)
-            && array_key_exists($path_parts['extension'], MimeTypes::$mimetypes)) {
-            $mime = MimeTypes::$mimetypes[$path_parts['extension']];
+        $path_extension = pathinfo($path, PATHINFO_EXTENSION);
+        if (isset($path_extension) && array_key_exists($path_extension, MimeTypes::$mimetypes)) {
+            $mime = MimeTypes::$mimetypes[$path_extension];
         } else {
             $mime = 'application/octet-stream';
         }

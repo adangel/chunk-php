@@ -2,6 +2,7 @@
 
 namespace com\github\adangel\chunkphp;
 
+use Exception;
 use PHPUnit\Framework\TestCase;
 
 class StorageTest extends TestCase {
@@ -135,5 +136,32 @@ class StorageTest extends TestCase {
         $this->assertDirectoryExists($this->basepath . '/bar/');
 
         rmdir($this->basepath . '/bar/');
+    }
+
+    public function testInvalidUsername() {
+        try {
+            $this->storage->findFile('joe invalid user', '5edaecac-6ac4-41c9-980d-e1e109c6b105');
+            $this->fail();
+        } catch (Exception $e) {
+            $this->assertEquals('Invalid username!', $e->getMessage());
+        }
+    }
+
+    public function testInvalidUuid() {
+        try {
+            $this->storage->findFile('joe', 'a');
+            $this->fail();
+        } catch (Exception $e) {
+            $this->assertEquals('Invalid uuid!', $e->getMessage());
+        }
+    }
+
+    public function testCreateWithInvalidUsername() {
+        try {
+            $this->storage->createFile('bar invalid user');
+            $this->fail();
+        } catch (Exception $e) {
+            $this->assertEquals('Invalid username!', $e->getMessage());
+        }
     }
 }
