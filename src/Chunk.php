@@ -84,23 +84,6 @@ EOT;
         }
     }
 
-    private function determinePathFromRequest() {
-        $pathinfo = '/';
-        if (isset($_SERVER['PATH_INFO'])) {
-            $pathinfo = $_SERVER['PATH_INFO'];
-        }
-        if ($_SERVER['REQUEST_URI'] === $_SERVER['PHP_SELF']) {
-            $pathinfo = $_SERVER['REQUEST_URI'];
-        }
-
-        $this->print("REQUEST_URI: " . $_SERVER['REQUEST_URI']);
-        $this->print("PHP_SELF: " . (isset($_SERVER['PHP_SELF']) ? $_SERVER['PHP_SELF'] : 'n/a'));
-        $this->print("PATH_INFO: " . (isset($_SERVER['PATH_INFO']) ? $_SERVER['PATH_INFO'] : 'n/a'));
-        $this->print("QUERY_STRING: " . (isset($_SERVER['QUERY_STRING']) ? $_SERVER['QUERY_STRING'] : 'n/a'));
-        $this->print("Using pathinfo: $pathinfo");
-        return $pathinfo;
-    }
-
     function handleRequest() {
         $this->print("Handling " . $this->method . " request");
 
@@ -182,8 +165,11 @@ HERE;
             if ($file !== NULL && $file->hasContent()) {
                 $this->print("user: {$file->getUser()}");
                 $this->print("uuid: {$file->getUuid()}");
+                $this->print("uri: {$uri}");
 
                 if (count($parts) === 2) {
+                    $this->print("Sending complete file...");
+
                     $this->sendContentType($file->getType());
 
                     if ($this->verbose) {
@@ -196,6 +182,8 @@ HERE;
                         print('</pre>');
                     }
                 } else if (count($parts) > 2) {
+                    $this->print("Sending archive content: {$parts[2]}");
+
                     if ($file->hasContent($parts[2])) {
                         $this->sendContentType($file->getType($parts[2]));
 
@@ -210,7 +198,7 @@ HERE;
                         }
                     } else {
                         // try again with with index.html
-                        header('Location: ' . $_SERVER['REQUEST_URI'] . '/index.html');
+                        header('Location: ' . $this->determineBaseUrlFromRequest() . $this->determinePathFromRequest() . 'index.html');
                         Chunk::end(302); # Found
                     }
                 }
@@ -245,7 +233,9 @@ HERE;
     }
 
     private function sendContentType($type) {
-        if (!$this->verbose) {
+        if ($this->verbose) {
+            $this->print('Content-Type: ' . $type);
+        } else {
             header('Content-Type: ' . $type);
         }
     }
@@ -327,27 +317,31 @@ HERE;
     }
 
     public function determineBaseUrlFromRequest() {
+        $this->print('<pre>' . print_r($_SERVER, TRUE) . '</pre>');
         $result = 'http://';
         if (array_key_exists('HTTPS', $_SERVER)) {
             $result = 'https://';
         }
-
         $result .= $_SERVER['HTTP_HOST'];
-        if ($this->method === 'PUT') {
-            $uriparts = explode('/', $_SERVER['REQUEST_URI']);
-            unset($uriparts[count($uriparts) - 1]);
-            $result .= implode('/', $uriparts);
-        } else {
-            $result .= $_SERVER['REQUEST_URI'];
+
+        if (isset($_SERVER['SCRIPT_FILENAME']) && $_SERVER['SCRIPT_FILENAME'] !== 'index.php'
+            && isset($_SERVER['SCRIPT_NAME'])) {
+            $result .= $_SERVER['SCRIPT_NAME'];
         }
-        $query = isset($_SERVER['QUERY_STRING']) ? $_SERVER['QUERY_STRING'] : '';
-        if (Chunk::str_endsWith($result, "?$query")) {
-            $result = substr($result, 0, -strlen("?$query"));
-        }
-        $result = trim($result, '/');
-        $this->print("Determined base URL: $result");
         return $result;
     }
+
+    public function determinePathFromRequest() {
+        if (isset($_SERVER['SCRIPT_FILENAME']) && $_SERVER['SCRIPT_FILENAME'] === 'index.php' && isset($_SERVER['SCRIPT_NAME'])) {
+            $pathinfo = $_SERVER['SCRIPT_NAME'];
+        } else if (isset($_SERVER['PATH_INFO'])) {
+            $pathinfo = $_SERVER['PATH_INFO'];
+        } else {
+            $pathinfo = '/';
+        }
+        return $pathinfo;
+    }
+
     # https://stackoverflow.com/a/15875555/1169968
     public static function guidv4()
     {
