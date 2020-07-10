@@ -197,9 +197,13 @@ HERE;
                             print('</pre>');
                         }
                     } else {
-                        // try again with with index.html
-                        header('Location: ' . $this->determineBaseUrlFromRequest() . $this->determinePathFromRequest() . 'index.html');
-                        Chunk::end(302); # Found
+                        if (!Chunk::str_endsWith($parts[2], 'index.html')) {
+                            // try again with with index.html
+                            header('Location: ' . $this->determineBaseUrlFromRequest() . $this->determinePathFromRequest() . 'index.html');
+                            Chunk::end(302); # Found
+                        } else {
+                            Chunk::end(404); # Not Found
+                        }
                     }
                 }
             } else {
