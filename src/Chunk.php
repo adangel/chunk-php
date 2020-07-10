@@ -329,8 +329,11 @@ HERE;
         $result .= $_SERVER['HTTP_HOST'];
 
         if (isset($_SERVER['SCRIPT_FILENAME']) && $_SERVER['SCRIPT_FILENAME'] !== 'index.php'
-            && isset($_SERVER['SCRIPT_NAME'])) {
-            $result .= $_SERVER['SCRIPT_NAME'];
+            && isset($_SERVER['SCRIPT_NAME']) && isset($_SERVER['REQUEST_URI'])) {
+
+            if (Chunk::str_startsWith($_SERVER['REQUEST_URI'], $_SERVER['SCRIPT_NAME'])) {
+                $result .= $_SERVER['SCRIPT_NAME'];
+            }
         }
         return $result;
     }
@@ -364,5 +367,4 @@ HERE;
         $len = strlen($pattern);
         return substr($str, -$len, $len) === $pattern;
     }
-
 }

@@ -53,4 +53,19 @@ class ChunkTest extends TestCase {
         $this->assertEquals("http://localhost:8000/index.php", $chunk->determineBaseUrlFromRequest());
         $this->assertEquals("/jondoe/25033eba-9924-4686-bfdf-7915c636374b/index.html", $chunk->determinePathFromRequest());
     }
+
+    public function testBaseUrlHttps() {
+        $_SERVER['HTTPS'] = 'on';
+        $_SERVER['HTTP_HOST'] = 'chunk.example.org';
+        $_SERVER['REQUEST_URI'] = '/';
+        $_SERVER['SCRIPT_NAME'] = '/index.php';
+        $_SERVER['SCRIPT_FILENAME'] = '/home/user/chunk-php/index.php';
+        $_SERVER['PHP_SELF'] = '/index.php';
+        unset($_SERVER['PATH_INFO']);
+        unset($_SERVER['QUERY_STRING']);
+
+        $chunk = new Chunk('GET');
+        $this->assertEquals("https://chunk.example.org", $chunk->determineBaseUrlFromRequest());
+        $this->assertEquals("/", $chunk->determinePathFromRequest());
+    }
 }
