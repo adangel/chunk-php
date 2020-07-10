@@ -95,7 +95,7 @@ class File {
     /** @return array|false */
     private function getZipEntry($pathInArchive) {
         $path = File::sanitizeArchivePath($pathInArchive);
-        if ($path === '') {
+        if ($path === FALSE) {
             return FALSE;
         }
 
@@ -109,13 +109,34 @@ class File {
         return $entry;
     }
 
-    private static function sanitizeArchivePath($path) {
-        return trim($path, '/');
+    // https://stackoverflow.com/questions/10064499/php-normalize-path-of-not-existing-directories-to-prevent-directory-traversals
+    public static function sanitizeArchivePath($path) {
+        $result = str_replace('\\', '/', $path); // change any backslashes to forward slashes
+        $segments = explode('/', $result);
+        $parts = array();
+        foreach ($segments as $segment) {
+            if ($segment === '.' || $segment === '') {
+                continue;
+            }
+            if ($segment === '..') {
+                if (count($parts) === 0) {
+                    return FALSE;
+                }
+                array_pop($parts);
+            } else {
+                array_push($parts, $segment);
+            }
+        }
+
+        if (count($parts) === 0) {
+            return FALSE;
+        }
+        return implode('/', $parts);
     }
 
     private function sendZipEntry($stream, $pathInArchive) : void {
         $path = File::sanitizeArchivePath($pathInArchive);
-        if ($path === '') {
+        if ($path === FALSE) {
             throw new Exception("Invalid entry $pathInArchive");
         }
 
@@ -144,7 +165,7 @@ class File {
     /** @return array|false */
     private function getTarEntry($pathInArchive) {
         $path = File::sanitizeArchivePath($pathInArchive);
-        if ($path === '') {
+        if ($path === FALSE) {
             return FALSE;
         }
 
@@ -158,7 +179,7 @@ class File {
 
     private function sendTarEntry($stream, $pathInArchive) : void {
         $path = File::sanitizeArchivePath($pathInArchive);
-        if ($path === '') {
+        if ($path === FALSE) {
             throw new Exception("Invalid entry $pathInArchive");
         }
 
