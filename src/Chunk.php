@@ -6,7 +6,7 @@ use ZipArchive;
 use PharData;
 use finfo;
 
-const VERSION = '1.0.0';
+const VERSION = '1.0.1-SNAPSHOT';
 
 class Chunk {
     private $method;
