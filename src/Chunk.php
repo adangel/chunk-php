@@ -326,14 +326,20 @@ HERE;
         if (array_key_exists('HTTPS', $_SERVER)) {
             $result = 'https://';
         }
-        $result .= $_SERVER['HTTP_HOST'];
 
-        if (isset($_SERVER['SCRIPT_FILENAME']) && $_SERVER['SCRIPT_FILENAME'] !== 'index.php'
+        if (isset($_SERVER['REDIRECT_URL']) && isset($_SERVER['REQUEST_URI']) && isset($_SERVER['SCRIPT_NAME'])
+            && $_SERVER['REDIRECT_URL'] === $_SERVER['REQUEST_URI']
+            && Chunk::str_startsWith($_SERVER['REQUEST_URI'], $_SERVER['SCRIPT_NAME'])) {
+                $result .= $_SERVER['HTTP_HOST'];
+        } else if (isset($_SERVER['SCRIPT_FILENAME']) && $_SERVER['SCRIPT_FILENAME'] !== 'index.php'
             && isset($_SERVER['SCRIPT_NAME']) && isset($_SERVER['REQUEST_URI'])) {
 
-            if (Chunk::str_startsWith($_SERVER['REQUEST_URI'], $_SERVER['SCRIPT_NAME'])) {
-                $result .= $_SERVER['SCRIPT_NAME'];
-            }
+                $result .= $_SERVER['HTTP_HOST'];
+                if (Chunk::str_startsWith($_SERVER['REQUEST_URI'], $_SERVER['SCRIPT_NAME'])) {
+                    $result .= $_SERVER['SCRIPT_NAME'];
+                }
+        } else {
+            $result .= $_SERVER['HTTP_HOST'];
         }
         return $result;
     }
@@ -343,6 +349,9 @@ HERE;
             $pathinfo = $_SERVER['SCRIPT_NAME'];
         } else if (isset($_SERVER['PATH_INFO'])) {
             $pathinfo = $_SERVER['PATH_INFO'];
+        } else if (isset($_SERVER['REDIRECT_URL']) && isset($_SERVER['REQUEST_URI']) && isset($_SERVER['SCRIPT_NAME'])
+            && $_SERVER['REDIRECT_URL'] === $_SERVER['REQUEST_URI']){
+            $pathinfo = $_SERVER['REQUEST_URI'];
         } else {
             $pathinfo = '/';
         }

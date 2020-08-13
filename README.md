@@ -52,7 +52,7 @@ RewriteRule ^(.*)$ /chunk-php/index.php/$1 [END]
 
 # if installed in root directory
 RewriteRule ^$ /index.php [END]
-RewriteRule ^(.*)$ /index.php/$1 [END]
+RewriteRule ^(.*)$ /index.php [END]
 ```
 
 And adjust the users/credentials in `src/Config.php`.

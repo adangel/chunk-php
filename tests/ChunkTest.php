@@ -16,6 +16,20 @@ class ChunkTest extends TestCase {
         $this->assertEquals("http://chunk.example.com", $url);
     }
 
+    public function testBaseUrlFCGI() {
+        $_SERVER['HTTP_HOST'] = 'chunk.example.com';
+        $_SERVER['HTTPS'] = 'on';
+        $_SERVER['SCRIPT_NAME'] = '/index.php';
+        $_SERVER['REQUEST_URI'] = '/joe/123';
+        $_SERVER['SCRIPT_FILENAME'] = '/var/www/vhosts/hosting123/chunk.example.com/index.php';
+        $_SERVER['REDIRECT_URL'] = '/joe/123';
+
+        $chunk = new Chunk('GET');
+        $url = $chunk->determineBaseUrlFromRequest();
+        $this->assertEquals("https://chunk.example.com", $url);
+        $this->assertEquals("/joe/123", $chunk->determinePathFromRequest());
+    }
+
     /*
      * When starting the dev server as: php -S localhost:8000 index.php
      * and accessing http://localhost:8000/jondoe/25033eba-9924-4686-bfdf-7915c636374b/index.html
