@@ -3,7 +3,7 @@
     "description": "Simple hosting of temporary files",
     "license": "MIT",
     "require": {
-        "php": "^7.2",
+        "php": "^8",
         "ext-zip": "*",
         "ext-phar": "*"
     },
