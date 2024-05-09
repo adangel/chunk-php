@@ -8,7 +8,6 @@
         "ext-phar": "*"
     },
     "require-dev": {
-        "phpunit/phpunit": "^9.6"
     },
     "autoload": {
         "psr-4": {
@@ -19,8 +18,5 @@
         "psr-4": {
             "com\\github\\adangel\\chunkphp\\": "tests/"
         }
-    },
-    "scripts": {
-        "test": "vendor/bin/phpunit tests"
     }
 }
