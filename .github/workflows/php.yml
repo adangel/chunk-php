@@ -1,4 +1,4 @@
-name: PHP Composer
+name: CI
 
 on:
   push:
@@ -13,6 +13,12 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
+
+    - name: Install PHP with extensions
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: latest
+        extensions: zip, phar
 
     - name: Validate composer.json and composer.lock
       run: ./tools/composer validate
