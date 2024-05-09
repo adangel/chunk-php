@@ -1,4 +1,4 @@
-name: PHP Composer
+name: CI
 
 on:
   push:
@@ -14,21 +14,17 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - name: Validate composer.json and composer.lock
-      run: composer validate
-      
-    - name: Cache Composer packages
-      id: composer-cache
-      uses: actions/cache@v4
+    - name: Install PHP with extensions
+      uses: shivammathur/setup-php@v2
       with:
-        path: vendor
-        key: ${{ runner.os }}-node-${{ hashFiles('**/composer.lock') }}
-        restore-keys: |
-          ${{ runner.os }}-node-
+        php-version: latest
+        extensions: zip, phar
+
+    - name: Validate composer.json and composer.lock
+      run: ./tools/composer validate
 
     - name: Install dependencies
-      if: steps.composer-cache.outputs.cache-hit != 'true'
-      run: composer install --prefer-dist --no-progress --no-suggest
+      run: ./tools/composer install --no-interaction --no-progress
 
     - name: Run test suite
-      run: composer test
+      run: ./tools/phpunit --bootstrap vendor/autoload.php tests

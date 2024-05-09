@@ -115,6 +115,10 @@ class File {
 
     // https://stackoverflow.com/questions/10064499/php-normalize-path-of-not-existing-directories-to-prevent-directory-traversals
     public static function sanitizeArchivePath($path) {
+        if ($path === NULL) {
+            return FALSE;
+        }
+
         $result = str_replace('\\', '/', $path); // change any backslashes to forward slashes
         $segments = explode('/', $result);
         $parts = array();

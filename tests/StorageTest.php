@@ -46,7 +46,7 @@ class StorageTest extends TestCase {
     public function testCreateNewFile() {
         $file = $this->storage->createFile('joe');
         $this->assertFalse($file->hasContent());
-        $this->assertFileNotExists($file->getRealPath());
+        $this->assertFileDoesNotExist($file->getRealPath());
         $this->assertStringStartsWith($this->basepath . '/joe/', $file->getRealPath());
         $this->assertStringEndsWith($file->getUuid(), $file->getRealPath());
     }
@@ -54,7 +54,7 @@ class StorageTest extends TestCase {
     public function testCreateNewFileWithExtension() {
         $file = $this->storage->createFile('joe', 'original-file-name.zip');
         $this->assertFalse($file->hasContent());
-        $this->assertFileNotExists($file->getRealPath());
+        $this->assertFileDoesNotExist($file->getRealPath());
         $this->assertStringStartsWith($this->basepath . '/joe/', $file->getRealPath());
         $this->assertStringEndsWith('.zip', $file->getRealPath());
     }
@@ -62,7 +62,7 @@ class StorageTest extends TestCase {
     public function testCreateNewFileWithExtension2() {
         $file = $this->storage->createFile('joe', '/joe/original-file-name.zip');
         $this->assertFalse($file->hasContent());
-        $this->assertFileNotExists($file->getRealPath());
+        $this->assertFileDoesNotExist($file->getRealPath());
         $this->assertStringStartsWith($this->basepath . '/joe/', $file->getRealPath());
         $this->assertStringEndsWith('.zip', $file->getRealPath());
     }
@@ -73,7 +73,7 @@ class StorageTest extends TestCase {
         rewind($stream);
 
         $file = $this->storage->createFile('joe');
-        $this->assertFileNotExists($file->getRealPath());
+        $this->assertFileDoesNotExist($file->getRealPath());
         $file->store($stream);
         $this->assertFileExists($file->getRealPath());
         $this->assertStringEqualsFile($file->getRealPath(), 'test test');
@@ -86,7 +86,7 @@ class StorageTest extends TestCase {
     public function testCreateNewFileForNewUser() {
         $file = $this->storage->createFile('bar');
         $this->assertFalse($file->hasContent());
-        $this->assertFileNotExists($file->getRealPath());
+        $this->assertFileDoesNotExist($file->getRealPath());
         $this->assertDirectoryExists($this->basepath . '/bar/');
 
         rmdir($this->basepath . '/bar/');
