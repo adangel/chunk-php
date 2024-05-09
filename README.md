@@ -24,13 +24,15 @@ in php so that it can be run on any website hoster.
 ## Development
 
 ```
-composer install
-vendor/bin/phpunit tests
+./tools/composer install
+./tools/phpunit --bootstrap vendor/autoload.php tests
 ```
 
 ### Run for development
 
-    php -S localhost:8000 index.php
+```
+php -S localhost:8000 index.php
+```
 
 and then go to <http://localhost:8000>
 
